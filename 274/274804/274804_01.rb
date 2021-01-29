@@ -11,7 +11,7 @@ def ncr(n, r)
   (n - r + 1..n).inject(:*) / (1..r).inject(:*)
 end
 
-def A340904(n)
+def A274804(n)
   s_ary = (0..n).map{|i| sigma(i)}
   ary = [1]
   (1..n).each{|i|
@@ -21,7 +21,7 @@ def A340904(n)
 end
 
 n = 22
-p ary = A340904(n)
+p ary = A274804(n)
 (0..n).each{|i|
   j = ary[i]
   break if j.to_s.size > 1000
