@@ -1,0 +1,1 @@
+my(N=66, x='x+O('x^N)); Vec(prod(k=1, sqrt(N), eta(x^(2*k^2))/eta(x^(k^2))))
