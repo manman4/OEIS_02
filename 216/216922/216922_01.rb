@@ -20,7 +20,7 @@ def A(n)
   (1..n).map{|i| (0..i).inject(0){|s, j| s + ncr(i + j, 2 * j) * a[j] / (i + j).to_r}}
 end
 
-n = 20
+n = 30
 ary = A(n)
 (1..n).each{|i|
   j = ary[i - 1].numerator
