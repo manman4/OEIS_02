@@ -1,4 +1,4 @@
-# mŸˆÈ‰º‚ğæ‚èo‚·
+# mæ¬¡ä»¥ä¸‹ã‚’å–ã‚Šå‡ºã™
 def mul(f_ary, b_ary, m)
   s1, s2 = f_ary.size, b_ary.size
   ary = Array.new(s1 + s2 - 1, 0)
@@ -10,7 +10,7 @@ def mul(f_ary, b_ary, m)
   ary[0..m]
 end
 
-# mŸˆÈ‰º‚ğæ‚èo‚·
+# mæ¬¡ä»¥ä¸‹ã‚’å–ã‚Šå‡ºã™
 def power(ary, n, m)
   if n == 0
     a = Array.new(m + 1, 0)
