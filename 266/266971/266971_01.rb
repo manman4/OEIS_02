@@ -11,10 +11,12 @@ def A(f_ary, g_ary, n)
   ary
 end
 
+def A266971(n)
+  A((0..n).to_a, (0..n).map{|i| -i}, n)
+end
+
 n = 37
-ary1 = [0] + (1..n).map{|i| i}
-ary2 = [0] + (1..n).map{|i| -i}
-ary = A(ary1, ary2, n)
+ary = A266971(n)
 (0..n).each{|i|
   j = ary[i]
   break if j.to_s.size > 1000
