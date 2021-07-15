@@ -14,7 +14,7 @@ def A(n)
   ary
 end
 
-n = 30
+n = 20
 ary = A(n)
 (0..n).each{|i|
   j = ary[i]
