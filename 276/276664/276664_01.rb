@@ -1,0 +1,21 @@
+require 'prime'
+
+def A276664(n)
+  ary = []
+  Prime.take(n).each{|p|
+    a = Array.new(p, 0)
+    (0..p - 1).each{|i| a[(i * i) % p] += 1}
+    ary << (0..p - 1).inject(0){|s, i| s + a[(i * i * i - i * i + 4 * i - 4) % p]}
+  }
+  ary
+end
+
+n = 100
+ary = A276664(n)
+(1..n).each{|i|
+  j = ary[i - 1]
+  break if j.to_s.size > 1000
+  print i
+  print ' '
+  puts j
+}
