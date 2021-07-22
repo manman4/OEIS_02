@@ -6,14 +6,6 @@ def pow(a, m, mod)
   return k * a % mod
 end
 
-
-n = 581337017
-p pow(5, n, n) - n
-
-n = 7202608727
-p pow(5, n, n) - n
-
-
 ary = []
 (1..10 ** 9).each{|k|
   p k if k % (10 ** 8) == 0
