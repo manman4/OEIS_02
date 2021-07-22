@@ -9,7 +9,6 @@ def pow(a, m, mod)
 end
 
 n = 581337017
-
 p pow(5, n, n) - n
 
 n = 7202608727
