@@ -56,42 +56,12 @@ def I(ary, n)
   a
 end
 
-def A008683(n)
-  ary = n.prime_division
-  return (-1) ** (ary.size % 2) if ary.all?{|i| i[1] == 1}
-  0
-end
-
-def A110163(n)
-  a = I(E_2k(2, n), n)
-  b = E_2k(3, n)
-  c = mul(a, b, n)
-  m_ary = [0] + (1..n).map{|i| A008683(i)}
-  ary = []
-  (1..n).each{|i|
-    s = 0
-    (1..i).each{|j|
-      s += m_ary[i / j] * c[j] if i % j == 0
-    }
-    ary << 8 + s / (3 * i)
-  }
-  ary
-end
-
-def A288851(n)
-  a = I(E_2k(3, n), n)
-  b = E_2k(4, n)
-  c = mul(a, b, n)
-  m_ary = [0] + (1..n).map{|i| A008683(i)}
-  ary = []
-  (1..n).each{|i|
-    s = 0
-    (1..i).each{|j|
-      s += m_ary[i / j] * c[j] if i % j == 0
-    }
-    ary << 12 + s / (2 * i)
-  }
-  ary
+# ary[0] = 1
+def sqrt_a(ary)
+  n = ary.size - 1
+  a = [1]
+  (0..n - 1).each{|i| a << (ary[i + 1] - (1..i).inject(0){|s, j| s + a[j] * a[-j]}) / 2}
+  a
 end
 
 # m���ȉ������o��
@@ -103,22 +73,16 @@ def power(ary, n, m)
   return mul(k, ary, m)
 end
 
-n = 13
-a = A110163(n)
-b = A288851(n)
-p c = (0..n - 1).map{|i| 3 * a[i] - 2 * b[i]}
-d = [0] + c.map{|i| i / 288}
-ary = [1]
-(1..n).each{|i|
-  x = [1] + [0] * (i - 1) + [-1]
-  y = power(x, -d[i], n)
-  ary = mul(ary, y, n)
+n = 12
+ary432 = power(sqrt_a(E_2k(2, n + 2)), 3, n + 2)
+ary6 = E_2k(3, n + 2)
+b = I((1..n + 2).map{|i| (ary432[i] - ary6[i]) / 864}, n + 1)
+c = (0..n + 1).map{|i| (ary432[i] + ary6[i]) / 2}
+ary = mul(b, c, n + 1)
+-1.upto(n){|i|
+  j = ary[i + 1]
+  break if j.to_s.size > 1000
+  print i
+  print ' '
+  puts j
 }
-
-p a = power(ary, 144, n + 1)
-p (1..n + 1).map{|i| -a[i] % 864}
-p b = I((1..n + 1).map{|i| -a[i] / 864}, n)
-a[0] = 2
-p c = (0..n).map{|i| a[i] / 2}
-# A299954 a(n-1)まで。a(n-1)に誤差が出るかも。。。
-p mul(b, c, n)
