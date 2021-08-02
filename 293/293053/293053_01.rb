@@ -50,7 +50,7 @@ def A293053(n)
   ary
 end
 
-n = 139
+n = 10
 ary = A293053(n)
 (0..ary.size - 1).each{|i|
   j = ary[i]
