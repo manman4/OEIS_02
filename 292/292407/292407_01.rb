@@ -10,7 +10,6 @@ def mul(f_ary, b_ary, m)
   ary[0..m]
 end
 
-# n���܂�
 def q(n)
   return [1] if n == 0
   ary = [1]
@@ -39,16 +38,12 @@ def I(ary, n)
   a
 end
 
-n = 30
-p ary = mul(I(q(n), n), r(n), n)
-b =[]
+n = 17
+ary = mul(I(q(n), n), r(n), n)
 (0..n).each{|i|
   j = ary[i]
   break if j.to_s.size > 1000
   print i
   print ' '
   puts j
-b<<j
 }
-p b
-
