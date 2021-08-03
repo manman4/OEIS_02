@@ -4,7 +4,7 @@ def ncr(n, r)
 end
 
 def A(k, n)
-  (0..n).inject(0){|s, i| s + (k - 2) ** (n - i) * ncr(n, i) * ncr(2 * i, i)}
+  (0..n).inject(0){|s, i| s + (k + 2) ** (n - i) * (-1) ** i * ncr(n, i) * ncr(2 * i, i)}
 end
 
 def B(k, n)
