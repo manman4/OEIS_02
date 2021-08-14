@@ -33,7 +33,7 @@ def A(k, n)
   [b] + (1..n).map{|i| c * sigma(2 * k - 1, i)}
 end
 
-# mŽŸˆÈ‰º‚ðŽæ‚èo‚·
+# mæ¬¡ä»¥ä¸‹ã‚’å–ã‚Šå‡ºã™
 def mul(f_ary, b_ary, m)
   s1, s2 = f_ary.size, b_ary.size
   ary = Array.new(s1 + s2 - 1, 0)
@@ -45,7 +45,7 @@ def mul(f_ary, b_ary, m)
   ary[0..m]
 end
 
-# mŽŸˆÈ‰º‚ðŽæ‚èo‚·
+# mæ¬¡ä»¥ä¸‹ã‚’å–ã‚Šå‡ºã™
 def power(ary, n, m)
   return [1] if n == 0
   k = power(ary, n >> 1, m)
