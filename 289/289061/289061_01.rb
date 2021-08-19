@@ -73,7 +73,7 @@ def A289061(n)
     (1..i).each{|j|
       s += m_ary[i / j] * c[j] if i % j == 0
     }
-    ary << s  / i
+    ary << s / i
   }
   ary
 end
