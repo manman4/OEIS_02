@@ -1,0 +1,142 @@
+require 'prime'
+
+# m���ȉ������o��
+def mul(f_ary, b_ary, m)
+  s1, s2 = f_ary.size, b_ary.size
+  ary = Array.new(s1 + s2 - 1, 0)
+  (0..s1 - 1).each{|i|
+    (0..s2 - 1).each{|j|
+      ary[i + j] += f_ary[i] * b_ary[j]
+    }
+  }
+  ary[0..m]
+end
+
+# m���ȉ������o��
+def power(ary, n, m)
+  return [1] if n == 0
+  k = power(ary, n >> 1, m)
+  k = mul(k, k, m)
+  return k if n & 1 == 0
+  return mul(k, ary, m)
+end
+
+def power0(a, n)
+  return 1 if n == 0
+  k = power0(a, n >> 1)
+  k *= k
+  return k if n & 1 == 0
+  return k * a
+end
+
+# x > 0
+def sigma(x, i)
+  sum = 1
+  pq = i.prime_division
+  pq.each{|a, n| sum *= (power0(a, (n + 1) * x) - 1) / (power0(a, x) - 1)}
+  sum
+end
+
+def bernoulli(n)
+  ary = []
+  a = []
+  (0..n).each{|i|
+    a << 1r / (i + 1)
+    i.downto(1){|j| a[j - 1] = j * (a[j - 1] - a[j])}
+    ary << a[0] # Bn = a[0]
+  }
+  ary
+end
+
+def E_2k(k, n)
+  a = (-4 * k / bernoulli(2 * k)[-1])
+  b = a.denominator
+  c = a.numerator
+  [b] + (1..n).map{|i| c * sigma(2 * k - 1, i)}
+end
+
+def E2k_m(k, m, n)
+  ary = E_2k(k, n)
+  power(ary, m, n)
+end
+
+def s(n)
+  s = 0
+  (1..n).each{|i| s += i if n % i == 0}
+  s
+end
+
+def A(k, n)
+  ary = [1]
+  a = [0] + (1..n).map{|i| s(i)}
+  (1..n).each{|i| ary << (1..i).inject(0){|s, j| s - k * a[j] * ary[-j]} / i}
+  ary
+end
+
+def A289063(n)
+  a = E2k_m(3, 2, n)
+  b = A(-24, n)
+  mul(a, b, n)
+end
+
+def S(c_ary, x_ary, n)
+  ary = Array.new(n + 1, 0)
+  tq = x_ary
+  tqn = [1] + Array.new(n, 0)
+  (0..c_ary.size - 1).each{|i|
+    (0..n).each{|j|
+      ary[j] += c_ary[i] * tqn[j]
+    }
+    tqn = mul(tqn, tq, n)
+  }
+  ary
+end
+
+def A289557(n)
+  s = 1
+  a, b, c = -11, -5, 0
+  ary = [1]
+  (1..n).each{|i|
+    a += 12
+    b += 12
+    c += 1
+    s *= a * b * 12r / (c * c)
+    ary << s.to_i
+  }
+  ary
+end
+
+def A289325(n)
+  c_ary = A289557(n)
+  x_ary = [0] + I(A289063(n), n).map{|i| -i}
+  S(c_ary, x_ary, n)
+end
+
+# ary[0] = 1
+def sqrt_a(ary)
+  n = ary.size - 1
+  a = [1]
+  (0..n - 1).each{|i| a << (ary[i + 1] - (1..i).inject(0){|s, j| s + a[j] * a[-j]}) / 2}
+  a
+end
+
+def A109817(n)
+  sqrt_a(A289325(n))
+end
+
+def I(ary, n)
+  a = [1]
+  (0..n - 1).each{|i| a << -(0..i).inject(0){|s, j| s + ary[1 + i - j] * a[j]}}
+  a
+end
+
+k = 1
+n = 12
+ary = I(power(A109817(n), k, n), n)
+(0..n).each{|i|
+  j = ary[i]
+  break if j.to_s.size > 1000
+  print i
+  print ' '
+  puts j
+}
