@@ -6,7 +6,7 @@ end
 def A(k, n)
   ary = [1]
   (1..n).each{|i|
-    ary << (f(i - 1) * (1..i).inject(0){|s, j| s += (j - 1) * j ** k * ary[i - j] / f(i - j).to_r}).to_i
+    ary << (f(i - 1) * (1..i).inject(0){|s, j| s + (j - 1) * j ** k * ary[i - j] / f(i - j).to_r}).to_i
   }
   ary
 end
