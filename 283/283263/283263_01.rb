@@ -19,9 +19,9 @@ def sigma(x, i)
   sum
 end
 
-def A(k, n)
+def A(k, m, n)
   ary = [1]
-  s_ary = [0] + (1..n).map{|i| sigma(k, i)}
+  s_ary = [0] + (1..n).map{|i| sigma(k, i * m)}
   n.times{|i|
     ary << -(1..i + 1).inject(0){|s, j| s + ary[-j] * s_ary[j]} / (i + 1)
   }
@@ -29,7 +29,7 @@ def A(k, n)
 end
 
 n = 35
-ary = A(3, n)
+ary = A(3, 1, n)
 (0..n).each{|i|
   j = ary[i]
   break if j.to_s.size > 1000
