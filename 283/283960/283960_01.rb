@@ -9,6 +9,7 @@ def A(k, n)
   end
   ary
 end
+
 def A283960(n)
   A(6, n)
 end
