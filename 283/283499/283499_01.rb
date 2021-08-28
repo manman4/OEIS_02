@@ -1,5 +1,3 @@
-require 'prime'
-
 def power(a, n)
   return 1 if n == 0
   k = power(a, n >> 1)
