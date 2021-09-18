@@ -1,0 +1,1 @@
+N=20; x='x+O('x^N); Vec(serlaplace(deriv(sum(k=1, N+1, x^k/(k*(1-x^(2*k)))))))
