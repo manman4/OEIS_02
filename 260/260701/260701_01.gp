@@ -1,0 +1,1 @@
+N=20; x='x+O('x^N); Vec(serlaplace(-sqrt(exp(-x)*(-2+3*exp(-x))))) 
