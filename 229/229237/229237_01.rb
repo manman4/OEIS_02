@@ -9,7 +9,7 @@ def A(k, n)
       b[j + 1] = a[j] + (i - 1) * a[j + 1]
     }
     a = b
-    # i > 0 のときa[j] = 0
+    # i > 0 のときa[0] = 0
     ary << (1..i).inject(0){|s, j| s + (k * i - j + 1) ** (j - 1) * a[j]}
   }
   ary
