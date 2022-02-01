@@ -1,0 +1,1 @@
+my(N=20, x='x+O('x^N)); Vec(sum(k=0, N, k!*(k^3*x)^k/prod(j=1, k, 1-k^3*j*x)))
