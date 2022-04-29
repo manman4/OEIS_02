@@ -1,3 +1,5 @@
+# Cf. A193375
+
 def f(n)
   return 1 if n < 2
   (1..n).inject(:*)
@@ -9,15 +11,16 @@ def A(n)
     m = f(i - 1)
     s = 0
     (1..i).each{|j|
-      break if j * j > i
-      s += j * j * ary[i - j * j] * m / f(i - j * j)
+      k = j * j
+      break if k > i
+      s += k * ary[i - k] * m / f(i - k)
     }
     ary << s
   }
   ary
 end
 
-n = 500
+n = 22
 ary = A(n)
 (0..n).each{|i|
   j = ary[i]
