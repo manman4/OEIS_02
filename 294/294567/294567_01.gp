@@ -1,0 +1,1 @@
+my(N=40, x='x+O('x^N)); Vec(sum(k=1, N, k^3*x^k/(1-k^2*x^k)))
