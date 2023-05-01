@@ -1,0 +1,1 @@
+x='x+O('x^66); Vec(serlaplace(exp(x^3*exp(x))))
