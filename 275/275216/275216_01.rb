@@ -26,7 +26,7 @@ end
 
 def A(n)
   ary = [[1]]
-  a = [[1]]
+  a = [[[1]]]
   (1..n).each{|i|
     new_ary = [[0]] + ary
     (0..i - 1).each{|j| 
