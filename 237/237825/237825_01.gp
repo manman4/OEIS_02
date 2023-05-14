@@ -1,0 +1,1 @@
+my(N=60, x='x+O('x^N)); concat([0, 0, 0], Vec(sum(k=1, N, x^(4*k)/prod(j=k, 3*k, 1-x^j))))
