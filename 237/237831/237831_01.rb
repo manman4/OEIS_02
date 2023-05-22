@@ -20,7 +20,8 @@ def f(n)
     s += 1
   end
   s = 1
-  while t = s * (3 * s + 1) / 2
+  while
+    t = s * (3 * s + 1) / 2
     break if t > n
     ary[t] += (-1) ** (s - 1) * s
     s += 1
@@ -51,9 +52,9 @@ def h(n)
   mul(f(n), g(n), n)
 end
 
-n = 10100
-m = 10000
-ary = h(n)
+n = 48
+m = 48
+p ary = h(n)
 (1..m).each{|i|
   j = ary[i]
   break if j.to_s.size > 1000
