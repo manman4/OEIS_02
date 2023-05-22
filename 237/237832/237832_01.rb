@@ -14,7 +14,8 @@ def f(n)
   ary = [0] * (n + 1)
   # Sum_{k>=1} (-1)^(k-1) * k * ( x^(k*(3*k-1)/2) + x^(k*(3*k+1)/2) )
   s = 1
-  while t = s * (3 * s - 1) / 2
+  while
+    t = s * (3 * s - 1) / 2
     break if t > n
     ary[t] += (-1) ** (s - 1) * s
     s += 1
@@ -78,9 +79,9 @@ def h(n)
   (0..n).map{|i| a[i] - b[i]}
 end
 
-n = 10100
-m = 10000
-ary = h(n)
+n = 54
+m = 54
+p ary = h(n)
 (1..m).each{|i|
   j = ary[i]
   break if j.to_s.size > 1000
