@@ -16,5 +16,5 @@ def delete_empty_folders(path)
 end
 
 # 削除を実行するディレクトリのパスを（慎重に）指定
-directory_to_clean = './20X'
+directory_to_clean = './24X'
 delete_empty_folders(directory_to_clean)
