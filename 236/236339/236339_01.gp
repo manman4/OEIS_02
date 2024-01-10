@@ -1,3 +1,1 @@
-\\ a(n+1) = (1/(n+1)) * Sum_{k=0..floor(n/2)} binomial(n+k,k) * binomial(3*n-k+1,n-2*k).
-a(n) = sum(k=0, (n-1)\2, binomial(n+k-1, k)*binomial(3*n-k-2, n-2*k-1))/n; 
-for(n=1, 30, print1(a(n), ", "));  
+my(N=30, x='x+O('x^N)); Vec(serreverse(x * (1-x) * (1-x-x^2))) 
