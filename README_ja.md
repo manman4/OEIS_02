@@ -1,5 +1,8 @@
 # OEIS_02
 
+- [日本語](README_ja.md)
+- [English](README.md)
+
 ## 概要
 
 私（[manman4](https://github.com/manman4)）は2016年からOEISの編集を始めました。
