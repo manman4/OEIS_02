@@ -28,3 +28,4 @@ ary = A(1, n)
   print ' '
   puts j
 }
+
