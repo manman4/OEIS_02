@@ -24,3 +24,4 @@ ary = A288485(n)
   print ' '
   puts j
 }
+
