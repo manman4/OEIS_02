@@ -13,7 +13,7 @@ def A(ary, n, m = 1)
   a_ary
 end
 
-# aa(n) = Sum_{k=0..floor((n-1)/4)} A000009(n-2*k) * A000041(k).
+# a(n) = Sum_{k=0..floor((n-1)/4)} A000009(n-2*k) * A000041(k).
 def a(n)
   ary = []
   ary1 = Array.new(n + 1, 1)
