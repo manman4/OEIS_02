@@ -1,4 +1,5 @@
 use std::cmp::min;
+use std::thread;
 use std::time::Instant;
 
 const MAX_LIMIT: usize = 30_000_000;
@@ -78,37 +79,59 @@ fn range_sum_floor(v: i64, low: i64, mut high: i64) -> i64 {
 }
 
 fn solve(n: i64, mu: &[i8]) -> i64 {
-    let mut total_sum = 0_i64;
     let base = (n as u128) / 12;
     let mut limit = isqrt_u128(base) as usize;
     limit = min(limit, MAX_LIMIT);
 
-    let mut d = 1_usize;
-    while d <= limit {
-        if mu[d] != 0 {
-            let d_i64 = d as i64;
-            let k = n / (2_i64 * d_i64 * d_i64);
-            let mut f_k = 0_i64;
-
-            let mut s = 3_i64;
-            while (s as i128) * (s as i128) <= 2_i128 * (k as i128) {
-                let v = k / s;
-                let m_start = s / 2 + 1;
-                let m_end = s - 1;
-                f_k += range_sum_floor(v, m_start, m_end);
-                s += 2;
-            }
-
-            if mu[d] == 1 {
-                total_sum += f_k;
-            } else {
-                total_sum -= f_k;
-            }
-        }
-        d += 2;
+    let mut workers = thread::available_parallelism()
+        .map(|n| n.get())
+        .unwrap_or(1);
+    if workers == 0 {
+        workers = 1;
     }
 
-    total_sum
+    thread::scope(|scope| {
+        let mut handles = Vec::with_capacity(workers);
+        for tid in 0..workers {
+            handles.push(scope.spawn(move || {
+                let mut local_sum = 0_i64;
+                let mut d = 1 + 2 * tid;
+                let step = 2 * workers;
+
+                while d <= limit {
+                    if mu[d] != 0 {
+                        let d_i64 = d as i64;
+                        let k = n / (2_i64 * d_i64 * d_i64);
+                        let mut f_k = 0_i64;
+
+                        let mut s = 3_i64;
+                        while (s as i128) * (s as i128) <= 2_i128 * (k as i128) {
+                            let v = k / s;
+                            let m_start = s / 2 + 1;
+                            let m_end = s - 1;
+                            f_k += range_sum_floor(v, m_start, m_end);
+                            s += 2;
+                        }
+
+                        if mu[d] == 1 {
+                            local_sum += f_k;
+                        } else {
+                            local_sum -= f_k;
+                        }
+                    }
+                    d += step;
+                }
+
+                local_sum
+            }));
+        }
+
+        let mut total_sum = 0_i64;
+        for handle in handles {
+            total_sum += handle.join().expect("worker thread panicked");
+        }
+        total_sum
+    })
 }
 
 fn main() {
