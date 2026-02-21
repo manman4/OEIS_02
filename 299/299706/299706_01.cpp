@@ -1,5 +1,5 @@
 #include <iostream>
-#include <vector>
+#include <algorithm>
 #include <cmath>
 #include <iomanip>
 #include <omp.h>
@@ -13,6 +13,10 @@ const int MAX_LIMIT = 30000000;
 int8_t mu[MAX_LIMIT + 1];
 
 void sieve_mobius(int n) {
+    if (n > MAX_LIMIT) return; // 境界外アクセス防止
+    static bool initialized = false;
+    if (initialized) return; // 2回目以降の呼び出しを無視
+    initialized = true;
     static int primes[MAX_LIMIT / 10];
     static bool is_not_prime[MAX_LIMIT + 1]; // bool配列(非特化)で高速化
     int pcnt = 0;
@@ -23,7 +27,7 @@ void sieve_mobius(int n) {
             mu[i] = -1;
         }
         for (int j = 0; j < pcnt; ++j) {
-            int target = i * primes[j];
+            long long target = (long long)i * primes[j];
             if (target > n) break;
             is_not_prime[target] = true;
             if (i % primes[j] == 0) {
@@ -39,7 +43,7 @@ inline long long range_sum_floor(long long V, long long low, long long high) {
     if (low > high || low > V) return 0;
     if (high > V) high = V;
     long long sum = 0;
-    for (long long i = low, next_i; i <= high; i = next_i + 1) {
+    for (long long i = low, next_i = 0; i <= high; i = next_i + 1) {
         long long val = V / i;
         if (val == 0) break;
         next_i = V / val;
@@ -52,7 +56,8 @@ inline long long range_sum_floor(long long V, long long low, long long high) {
 long long solve(long long N) {
     long long total_sum = 0;
     // long double を使用して 10^16 の精度誤差を回避
-    long long limit = static_cast<long long>(sqrtl((long double)N / 12.0));
+    long long limit = static_cast<long long>(sqrtl((long double)N / 12.0L));
+    limit = min(limit, (long long)MAX_LIMIT); // mu[] 境界外アクセス防止
 
     #pragma omp parallel for reduction(+:total_sum) schedule(dynamic)
     for (long long d = 1; d <= limit; d += 2) {
