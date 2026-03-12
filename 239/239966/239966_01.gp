@@ -1,6 +1,6 @@
 default(parisize, 1200000000)
 
-\\ (distinct parts) <= (min multiplicity) を計算する関数
+\\ (distinct parts) = (min multiplicity) を計算する関数
 part_min_mult(n) = {
     my(q = 'q + O('q^(n+1)));
     my(total_gf = 0);
