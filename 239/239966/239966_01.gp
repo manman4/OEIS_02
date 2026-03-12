@@ -20,6 +20,7 @@ part_min_mult(n) = {
     return(total_gf);
 }
 
-M=1000;
-res = part_min_mult(M); 
-for(n=0, M, write("b239966.txt", n, " ", polcoef(res, n)));
+M=60;
+res = part_min_mult(M);
+for(n=0, M, print1(polcoef(res, n), ", "));
+\\ for(n=0, M, write("b239966.txt", n, " ", polcoef(res, n)));
