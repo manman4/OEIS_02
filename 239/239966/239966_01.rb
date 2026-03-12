@@ -7,7 +7,7 @@ def count_exact_d_distinct_with_min_mult_up_to(n, d, min_mult)
   (1..n).each{|size|
     dp2 = dp.map(&:dup)
 
-    (0...d).each{|j|
+    (0..d - 1).each{|j|
       temp = Array.new(n + 1, 0)
 
       base = min_mult * size
@@ -50,10 +50,11 @@ def count_partitions_with_constraint_eq_up_to(n_max)
   counts
 end
 
-n = 1000
+n = 60
 counts = count_partitions_with_constraint_eq_up_to(n)
-counts.each_with_index{|val, n|
-  print n
-  print ' '
-  puts val
-}
+p (0..n).map{|s| counts[s]}
+# counts.each_with_index{|val, n|
+#   print n
+#   print ' '
+#   puts val
+# }
