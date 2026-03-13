@@ -1,37 +1,18 @@
-\\ ニュートンの恒等式を用いて、異なる k 種類のパーツからなり、
-\\ 各パーツの重複数上限が m である分割の母関数（z^k の係数）を直接計算する
-get_ek_limit(k, m, n) = {
-    my(S = vector(k));
-    my(q = 'q + O('q^(n+1)));
-    
-    \\ べき乗和 S_i = sum_{j=1}^{n} (q^j + q^{2j} + ... + q^{mj})^i
-    for(i = 1, k,
-        S[i] = sum(j = 1, n\i, (q^j * (1 - q^(m*j)) / (1 - q^j))^i);
-    );
-    
-    \\ 基本対称式 e_k を計算
-    my(e = vector(k+1));
-    e[1] = 1;
-    for(i = 1, k,
-        e[i+1] = sum(j = 1, i, (-1)^(j-1) * e[i-j+1] * S[j]) / i;
-    );
-    return(e[k+1]);
-}
-
-fast_A240306(M) = {
+part_max_gt_k(n) = {
     my(total_gf = 1);
-    my(q = 'q + O('q^(M+1)));
-    
-    for(k = 1, M,
-        if(k*(k+1)/2 > M, break);
+    my(q = 'q + O('q^(n+1)));
+    for(k = 1, n,
+        \\ 種類数 k を構成するための最小の n = k(k+1)/2
+        if(k*(k+1)/2 > n, break);
         
-        \\ A240306 の条件: 種類数 k に対して 最大重複数 <= k
-        total_gf += get_ek_limit(k, k, M);
+        \\ 各パーツの重複数 <= k-1
+        my(A = polcoeff(prod(j=1, n, 1 + 'z * q^j * (1-q^(k*j))/(1-q^j)), k, 'z));
+        total_gf += A;
     );
     return(total_gf);
 }
 
-M=1000;
-res = fast_A240306(M);
+M=100;
+res = part_max_gt_k(M);
 \\ for(n=0, M, print1(polcoef(res, n), ", "));
-for(n=0, M, write("b240306_fast.txt", n, " ", polcoef(res, n)));
+for(n=0, M, write("b240306_slow.txt", n, " ", polcoef(res, n)));
