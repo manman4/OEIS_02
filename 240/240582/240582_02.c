@@ -318,6 +318,18 @@ static size_t count_nonzero(const Poly *p) {
     return p->nonzero_cnt;
 }
 
+static uint8_t poly_max_exp_var(const Poly *p, int max_var) {
+    uint8_t maxe = 0;
+    for (size_t i = 0; i < p->size; i++) {
+        if (mpz_sgn(p->coeffs[i]) == 0) continue;
+        for (int v = 1; v <= max_var; v++) {
+            uint8_t e = get_exp(p->terms[i], v);
+            if (e > maxe) maxe = e;
+        }
+    }
+    return maxe;
+}
+
 static void poly_max_abs(mpz_t out, Poly *p) {
     if (p->size == 0) {
         mpz_set_ui(out, 0);
@@ -372,7 +384,7 @@ int main(int argc, char **argv) {
 
     if (max_n >= 1) {
         mpz_set_ui(maxc, 1);
-        gmp_printf("n=1 terms: 1 max|coeff|=%Zd\n", maxc);
+        gmp_printf("n=1 terms: 1 max|coeff|=%Zd maxexp=0\n", maxc);
     }
 
     // n=2: s = a1^2 - 4*a2
@@ -389,7 +401,8 @@ int main(int argc, char **argv) {
 
     if (max_n >= 2) {
         poly_max_abs(maxc, &s);
-        gmp_printf("n=2 terms: %zu max|coeff|=%Zd\n", count_nonzero(&s), maxc);
+        gmp_printf("n=2 terms: %zu max|coeff|=%Zd maxexp=%u\n",
+                   count_nonzero(&s), maxc, (unsigned)poly_max_exp_var(&s, 2));
     }
 
     for (int n = 3; n <= max_n; n++) {
@@ -433,7 +446,8 @@ int main(int argc, char **argv) {
         u0 = tmp;
 
         poly_max_abs(maxc, &s);
-        gmp_printf("n=%d terms: %zu max|coeff|=%Zd\n", n, count_nonzero(&s), maxc);
+        gmp_printf("n=%d terms: %zu max|coeff|=%Zd maxexp=%u\n",
+                   n, count_nonzero(&s), maxc, (unsigned)poly_max_exp_var(&s, n));
         fflush(stdout);
     }
 
