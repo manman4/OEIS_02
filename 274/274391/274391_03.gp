@@ -3,14 +3,14 @@
 
   Original form:
     A(n, 0) = 1;
-    A(n, k) = Sum_{x_1,...,x_{n+1} >= 0 and x_1+...+x_{n+1} = k-1}
+    A(n, k) = Sum_{x_1,x_2, ..., x_{n+1} >= 0 and x_1 + x_2 + ... + x_{n+1} = k-1}
                 multinomial(k-1; x_1, x_2, ..., x_{n+1})
                 * Product_{i=1..n} (k - Sum_{j=1..i-1} x_j)^(x_i).
 
   Reduced form for n > 0 and k > 0:
     A(0, k) = A(n, 0) = 1;
-    A(n, k) = Sum_{x_1,...,x_n >= 0 and x_1+...+x_n = k-1}
-                multinomial(k-1; x_1, ..., x_n)
+    A(n, k) = Sum_{x_1,x_2, ..., x_n >= 0 and x_1 + x_2 + ... + x_n = k-1}
+                multinomial(k-1; x_1, x_2, ..., x_n)
                 * (x_n + 2)^(x_n)
                 * Product_{i=1..n-1} (k - Sum_{j=1..i-1} x_j)^(x_i).
 
