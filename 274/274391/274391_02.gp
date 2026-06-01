@@ -1,5 +1,5 @@
 /*
-  Square array A(n, k), n >= 0, k >= 0, read by antidiagonals downward.
+  Square array A(n, k), n >= 0, k >= 0, read by antidiagonals upward.
 
   Original form:
     A(n, 0) = 1;
