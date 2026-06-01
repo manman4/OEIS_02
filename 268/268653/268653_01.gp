@@ -20,3 +20,7 @@ a268653(n) = {
   )
 };
 for(n=0, 20, print1(a268653(n), ", "));
+
+\\ a(0) = 1; a(n) = Sum_{k=0..n-1} binomial(n-1,k) * n^k * A227176(n-k).
+a(n) = if(n==0, 1, sum(k=0, n-1, binomial(n-1, k) * n^k * a227176(n-k)));
+for(n=0, 20, print1(a(n)-a268653(n), ", "));
