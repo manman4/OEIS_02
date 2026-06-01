@@ -14,6 +14,14 @@
                 * (x_n + 2)^(x_n)
                 * Product_{i=1..n-1} (k - Sum_{j=1..i-1} x_j)^(x_i).
 
+  This is obtained from the (n+1)-variable form by combining the last two
+  variables with the binomial theorem:
+
+    sum_{a+b=t} binomial(t, a) * (t+1)^a = (t+2)^t.
+
+  So the last pair (x_n, x_{n+1}) in the original sum collapses to the
+  single factor (x_n + 2)^(x_n).
+
   This file verifies that the two formulas agree.
 */
 
