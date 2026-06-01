@@ -7,7 +7,7 @@
                 multinomial(k-1; x_1, x_2, ..., x_{n+1})
                 * Product_{i=1..n} (k - Sum_{j=1..i-1} x_j)^(x_i).
 
-  Reduced form for n > 0:
+  Reduced form for n > 0 and k > 0:
     A(0, k) = A(n, 0) = 1;
     A(n, k) = Sum_{x_1,...,x_n >= 0 and x_1+...+x_n = k-1}
                 multinomial(k-1; x_1, ..., x_n)
@@ -104,3 +104,7 @@ validate_formulas(max_n, max_k) = {
 };
 
 validate_formulas(default_n, default_k);
+
+A(n, k) = a_reduced(n, k);
+
+for(n = 0, 10, for(k = 0, n, print1(A(n - k, k), ", ")));
