@@ -1,4 +1,3 @@
-
 \\ A(0,k) = A(n,0) = 1, and for n > 0, k > 0, A(n,k) = Sum_{j=0..k-1} binomial(k-1,j) * k^j * A(n-1,k-j).
 a(n, k) = if(n*k==0, 1, sum(j=0, k-1, binomial(k-1, j) * k^j * a(n-1, k-j)));
 for(n=0, 10, for(k=0, n, print1(a(n-k, k), ", ")));
