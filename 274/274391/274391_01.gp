@@ -34,11 +34,13 @@ a(n, k) = {
   n! * polcoef(egf, n)
 };
 
+b(k, n) = a(n, k);
 
-matrix(7, 7, n, k, a(n - 1, k - 1))
-for(n=0, 10, for(k=0, n, print1(a(k, n-k),", ")));
+matrix(7, 7, n, k, b(n - 1, k - 1))
+\\ upward 
+for(n=0, 10, for(k=0, n, print1(b(n-k, k),", ")));
 
-for(n=0, 20, print1(a(n, 1), ", "));
-for(n=0, 20, print1(a(n, 2), ", "));
-for(n=0, 20, print1(a(n, 3), ", "));
-for(n=0, 20, print1(a(n, 4), ", "));
+for(n=0, 20, print1(b(1, n), ", "));
+for(n=0, 20, print1(b(2, n), ", "));
+for(n=0, 20, print1(b(3, n), ", "));
+for(n=0, 20, print1(b(4, n), ", "));
