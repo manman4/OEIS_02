@@ -64,7 +64,6 @@ B(n, k) = {
   return(B_rec(n, k, k - 1, 1, k - 1, 0, 1, 1));
 };
 
-\\ n > 0.
 for(n=0, 7, for(k=0, 15, print1(B(n, k)-A(n, k), ", ")); print);
 
 
