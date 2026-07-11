@@ -23,63 +23,59 @@
 #   b(d) = u(d)   + Sum_{i=1..d-1} c(i)*b(d-i)
 #   c(d) = b(d) + u(d) + Sum_{i=1..d-1} c(i)*c(d-i)
 #   s(d) = c(d)   + Sum_{i=1..d-1} c(i)*s(d-i)
-#
-# Usage:
-#   ruby 260332_recurrence.rb 20
+
 
 def catalan(n)
   c = 1
-  0.upto(n - 1) do |i|
+  0.upto(n - 1){|i|
     c = c * 2 * (2 * i + 1) / (i + 2)
-  end
+  }
   c
 end
 
-def a260332_by_recurrence(limit)
+def a260332(limit)
   return [1] if limit == 0
 
   v = 4
-  a = Array.new(limit + 1) { Array.new(v + 1, 0) }
+  a = Array.new(limit + 1){Array.new(v + 1, 0)}
 
   # Initial values alpha^1_{v,j}(1).
   a[1][1] = 1
-  2.upto(v - 1) { |j| a[1][j] = catalan(j - 1) }
+  2.upto(v - 1){|j| a[1][j] = catalan(j - 1)}
   a[1][v] = catalan(v - 2)
 
-  2.upto(limit) do |d|
+  2.upto(limit){|d|
     # j = 1: compute u(d).
     s = a[d - 1][v]
-    1.upto(d - 1) do |i|
+    1.upto(d - 1){|i|
       s += a[i][v - 1] * a[d - i][1]
-    end
+    }
     a[d][1] = s
 
     # j = 2, ..., v - 1: compute b(d), then c(d).
-    2.upto(v - 1) do |j|
+    2.upto(v - 1){|j|
       s = a[d][j - 1] * a[1][1]
-      2.upto(j - 1) do |g|
+      2.upto(j - 1){|g|
         s += a[d][j - g] * a[1][g]
-      end
-      1.upto(d - 1) do |i|
+      }
+      1.upto(d - 1){|i|
         s += a[i][v - 1] * a[d - i][j]
-      end
+      }
       a[d][j] = s
-    end
+    }
 
     # j = v: compute s(d), i.e. d complete diamonds.
     s = a[d][v - 1]
-    1.upto(d - 1) do |i|
+    1.upto(d - 1){|i|
       s += a[i][v - 1] * a[d - i][v]
-    end
+    }
     a[d][v] = s
-  end
+  }
 
   values = [1]
-  1.upto(limit) { |d| values << a[d][v] }
+  1.upto(limit){|d| values << a[d][v]}
   values
 end
 
-limit = (ARGV[0] || 20).to_i
-a260332_by_recurrence(limit).each_with_index do |value, n|
-  puts "#{n} #{value}"
-end
+n = 20
+p ary = a260332(n)
