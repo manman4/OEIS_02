@@ -77,5 +77,12 @@ def a260332(limit)
   values
 end
 
-n = 20
-p ary = a260332(n)
+n = 1000
+ary = a260332(n)
+(0..n).each{|i|
+  j = ary[i]
+  break if j.to_s.size > 1000
+  print i
+  print ' '
+  puts j
+}
