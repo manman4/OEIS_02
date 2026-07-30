@@ -1,5 +1,5 @@
 /*
- * Low-memory, disk-backed A299172 search.
+ * A299172: low-memory, disk-backed Hurwitz-table search.
  *
  * This file reuses the exact reduced-form enumerator and utility routines
  * from A299172_hurwitz.c.  Its own main program writes the packed H6 table
@@ -511,7 +511,7 @@ int a299172_disk_program_main(int argc, char **argv)
     uint64_t read_block = 512000000;
     unsigned threads = default_thread_count();
     const char *table_path = "A299172_H6_disk.bin";
-    const char *output_path = "A299172_hurwitz_disk_hits.txt";
+    const char *output_path = "299172_01_hits.txt";
 
     for (int i = 1; i < argc; ++i) {
         if ((!strcmp(argv[i], "-n") || !strcmp(argv[i], "--limit")) &&
