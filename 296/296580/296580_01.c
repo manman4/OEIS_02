@@ -26,7 +26,7 @@
  */
 
 #define A299172_DISK_NO_MAIN
-#include "A299172_hurwitz_disk.c"
+#include "299172_01.c"
 
 typedef struct {
     const uint32_t *primes;
