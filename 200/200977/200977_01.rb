@@ -14,7 +14,7 @@ def A(n)
   ary
 end
 
-n = 10 ** 7
+n = 7 * 10 ** 7
 ary = A(n)
 
 p a = (0..100).map{|i| ary.index(i)}
