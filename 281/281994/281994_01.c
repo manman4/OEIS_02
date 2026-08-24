@@ -22,6 +22,9 @@
  * by the complete mask key.  Counts, table load, allocation sizes, and output
  * are checked.  Sparse tags reserve their top bit as the atomic busy flag and
  * use the lower 31 bits as the complete mask key.  The deliberate cap is n=31.
+ * Sparse values below 2^31 use 32 bits; larger values are placed in compact
+ * append-only chunks.  This lowers the n=31 base memo from about 6.1 GiB to
+ * about 4.1 GiB without truncating any uint64_t result.
  *
  * Build:
  *   clang -O3 -march=native -std=c11 -Wall -Wextra -Wpedantic \
@@ -62,6 +65,10 @@
 #define PROGRESS_POLL_NANOSECONDS 100000000L
 #define BFILE_NAME "b281994_01.txt"
 #define SPARSE_BUSY_BIT UINT32_C(0x80000000)
+#define WIDE_VALUE_BIT UINT32_C(0x80000000)
+#define WIDE_CHUNK_BITS 16U
+#define WIDE_CHUNK_SIZE (UINT32_C(1) << WIDE_CHUNK_BITS)
+#define WIDE_CHUNK_COUNT (UINT32_C(1) << (31U - WIDE_CHUNK_BITS))
 #define LOW_BITS 16U
 #define LOW_SIZE (UINT32_C(1) << LOW_BITS)
 #define HIGH_BITS (MAX_N - LOW_BITS)
@@ -76,7 +83,10 @@ typedef struct {
     _Atomic uint64_t *dense;
     size_t dense_state_count;
     _Atomic uint32_t *tags;
-    uint64_t *values;
+    uint32_t *values;
+    _Atomic(uint64_t *) *wide_chunks;
+    _Atomic uint32_t wide_size;
+    pthread_mutex_t wide_mutex;
     size_t capacity;
     _Atomic size_t size;
 } ConcurrentMemo;
@@ -197,6 +207,80 @@ static uint32_t hash_mask(uint32_t mask)
     return mask;
 }
 
+static uint64_t *wide_chunk(ConcurrentMemo *memo, uint32_t chunk_index,
+                            bool create)
+{
+    if (chunk_index >= WIDE_CHUNK_COUNT)
+        die("wide-value chunk index overflow");
+    uint64_t *chunk =
+        atomic_load_explicit(&memo->wide_chunks[chunk_index],
+                             memory_order_acquire);
+    if (chunk != NULL || !create) return chunk;
+
+    const int lock_error = pthread_mutex_lock(&memo->wide_mutex);
+    if (lock_error != 0) {
+        fprintf(stderr, "error: pthread_mutex_lock: %s\n",
+                strerror(lock_error));
+        exit(EXIT_FAILURE);
+    }
+    chunk = atomic_load_explicit(&memo->wide_chunks[chunk_index],
+                                 memory_order_relaxed);
+    if (chunk == NULL) {
+        if (WIDE_CHUNK_SIZE > SIZE_MAX / sizeof(*chunk))
+            die("wide-value chunk allocation size overflow");
+        chunk = malloc((size_t)WIDE_CHUNK_SIZE * sizeof(*chunk));
+        if (chunk == NULL) die("could not allocate a wide-value chunk");
+        atomic_store_explicit(&memo->wide_chunks[chunk_index], chunk,
+                              memory_order_release);
+    }
+    const int unlock_error = pthread_mutex_unlock(&memo->wide_mutex);
+    if (unlock_error != 0) {
+        fprintf(stderr, "error: pthread_mutex_unlock: %s\n",
+                strerror(unlock_error));
+        exit(EXIT_FAILURE);
+    }
+    return chunk;
+}
+
+static uint32_t encode_sparse_value(ConcurrentMemo *memo, uint64_t value)
+{
+    if (value < WIDE_VALUE_BIT) return (uint32_t)value;
+    const uint32_t index =
+        atomic_fetch_add_explicit(&memo->wide_size, 1,
+                                  memory_order_relaxed);
+    if (index >= WIDE_VALUE_BIT)
+        die("too many wide sparse memo values");
+    uint64_t *chunk = wide_chunk(memo, index >> WIDE_CHUNK_BITS, true);
+    chunk[index & (WIDE_CHUNK_SIZE - 1U)] = value;
+    return WIDE_VALUE_BIT | index;
+}
+
+static uint64_t decode_sparse_value(ConcurrentMemo *memo, size_t index)
+{
+    const uint32_t encoded = memo->values[index];
+    if ((encoded & WIDE_VALUE_BIT) == 0) return encoded;
+    const uint32_t wide_index = encoded & ~WIDE_VALUE_BIT;
+    uint64_t *chunk =
+        wide_chunk(memo, wide_index >> WIDE_CHUNK_BITS, false);
+    if (chunk == NULL) die("missing wide sparse memo value");
+    return chunk[wide_index & (WIDE_CHUNK_SIZE - 1U)];
+}
+
+static void clear_wide_values(ConcurrentMemo *memo)
+{
+    const uint32_t count =
+        atomic_load_explicit(&memo->wide_size, memory_order_relaxed);
+    const uint32_t chunks = count == 0 ? 0U
+        : ((count - 1U) >> WIDE_CHUNK_BITS) + 1U;
+    for (uint32_t i = 0; i < chunks; ++i) {
+        uint64_t *chunk =
+            atomic_exchange_explicit(&memo->wide_chunks[i], NULL,
+                                     memory_order_relaxed);
+        free(chunk);
+    }
+    atomic_store_explicit(&memo->wide_size, 0, memory_order_relaxed);
+}
+
 static bool memo_claim(Shared *shared, uint32_t mask, uint64_t *value,
                        MemoToken *token)
 {
@@ -250,7 +334,7 @@ static bool memo_claim(Shared *shared, uint32_t mask, uint64_t *value,
         uint32_t tag = atomic_load_explicit(&memo->tags[index],
                                             memory_order_acquire);
         if (tag == complete_tag) {
-            *value = memo->values[index];
+            *value = decode_sparse_value(memo, index);
             return false;
         }
         if (tag == busy_tag) {
@@ -266,7 +350,7 @@ static bool memo_claim(Shared *shared, uint32_t mask, uint64_t *value,
                 }
             } while (tag == busy_tag);
             if (tag == complete_tag) {
-                *value = memo->values[index];
+                *value = decode_sparse_value(memo, index);
                 return false;
             }
             continue;
@@ -301,7 +385,8 @@ static void memo_publish(Shared *shared, uint32_t mask,
         atomic_store_explicit(&shared->memo.dense[token->index], value + 1U,
                               memory_order_release);
     } else {
-        shared->memo.values[token->index] = value;
+        shared->memo.values[token->index] =
+            encode_sparse_value(&shared->memo, value);
         const uint32_t complete_tag = mask;
         atomic_store_explicit(&shared->memo.tags[token->index], complete_tag,
                               memory_order_release);
@@ -538,7 +623,7 @@ static void grow_sparse_memo(Shared *shared, size_t new_capacity,
         if (saved == old_size)
             die("sparse memo contains more entries than its size");
         saved_masks[saved] = mask;
-        saved_values[saved] = memo->values[i];
+        saved_values[saved] = decode_sparse_value(memo, i);
         ++saved;
     }
     if (saved != old_size)
@@ -550,7 +635,8 @@ static void grow_sparse_memo(Shared *shared, size_t new_capacity,
         die("could not allocate the grown sparse memo keys");
     free(memo->tags);
     free(memo->values);
-    uint64_t *new_values =
+    clear_wide_values(memo);
+    uint32_t *new_values =
         malloc(new_capacity * sizeof(*new_values));
     if (new_values == NULL)
         die("could not allocate the grown sparse memo values");
@@ -563,7 +649,7 @@ static void grow_sparse_memo(Shared *shared, size_t new_capacity,
         while (atomic_load_explicit(&new_tags[index],
                                     memory_order_relaxed) != 0)
             index = (index + 1U) & (new_capacity - 1U);
-        new_values[index] = saved_values[i];
+        new_values[index] = encode_sparse_value(memo, saved_values[i]);
         atomic_store_explicit(&new_tags[index], tag,
                               memory_order_relaxed);
     }
@@ -595,6 +681,16 @@ static Shared *shared_create(unsigned n, unsigned thread_count)
     Shared *shared = calloc(1, sizeof(*shared));
     if (shared == NULL) die("could not allocate the shared DP context");
     shared->thread_count = thread_count;
+    shared->memo.wide_chunks =
+        calloc(WIDE_CHUNK_COUNT, sizeof(*shared->memo.wide_chunks));
+    if (shared->memo.wide_chunks == NULL)
+        die("could not allocate wide-value chunk pointers");
+    const int mutex_error = pthread_mutex_init(&shared->memo.wide_mutex, NULL);
+    if (mutex_error != 0) {
+        fprintf(stderr, "error: pthread_mutex_init: %s\n",
+                strerror(mutex_error));
+        exit(EXIT_FAILURE);
+    }
     initialize_tables(shared);
     shared_prepare_n(shared, n);
     uint64_t ignored;
@@ -616,6 +712,14 @@ static void shared_destroy(Shared *shared)
     free(shared->memo.dense);
     free(shared->memo.tags);
     free(shared->memo.values);
+    clear_wide_values(&shared->memo);
+    free(shared->memo.wide_chunks);
+    const int mutex_error = pthread_mutex_destroy(&shared->memo.wide_mutex);
+    if (mutex_error != 0) {
+        fprintf(stderr, "error: pthread_mutex_destroy: %s\n",
+                strerror(mutex_error));
+        exit(EXIT_FAILURE);
+    }
     free(shared);
 }
 
@@ -922,8 +1026,9 @@ static void usage(FILE *stream, const char *program)
             "[--self-test] [--stats]\n"
             "  --upto N     print a(0)..a(N), 0 <= N <= %u (default %u)\n"
             "  --target N   print only a(N)\n"
-            "               n=31 uses about 6.1 GiB after allocation;\n"
-            "               --upto 31 can temporarily require about 8 GiB\n"
+            "               appends when the b-file contains n=0..N-1\n"
+            "               n=31 uses about 4.1 GiB plus wide-value chunks;\n"
+            "               --upto 31 can temporarily require about 6 GiB\n"
             "  --threads T  use 1..64 workers (default: up to 8 CPUs)\n"
             "  --self-test  compare computed terms with regression values\n"
             "  --stats      report states, waits, and sparse-table load\n"
@@ -934,8 +1039,51 @@ static void usage(FILE *stream, const char *program)
             program, MAX_N, DEFAULT_N);
 }
 
-static FILE *open_bfile(void)
+static FILE *open_bfile(bool target_only, unsigned target)
 {
+    if (target_only) {
+        FILE *input = fopen(BFILE_NAME, "r");
+        if (input != NULL) {
+            char line[128];
+            unsigned expected = 0;
+            while (fgets(line, sizeof(line), input) != NULL) {
+                unsigned index;
+                uint64_t value;
+                char extra;
+                if (strchr(line, '\n') == NULL && !feof(input))
+                    die("b-file line is too long");
+                if (sscanf(line, "%u %" SCNu64 " %c",
+                           &index, &value, &extra) != 2 ||
+                    index != expected)
+                    die("existing b-file is malformed or has a gap");
+                if (index <= KNOWN_N && value != known[index])
+                    die("existing b-file disagrees with a known value");
+                ++expected;
+            }
+            if (ferror(input) || fclose(input) != 0)
+                die("could not finish reading the existing b-file");
+            if (expected != 0 && expected != target) {
+                fprintf(stderr,
+                        "error: --target %u requires an existing b-file "
+                        "through n=%u, but it has %u terms\n",
+                        target, target == 0 ? 0 : target - 1U, expected);
+                exit(EXIT_FAILURE);
+            }
+            FILE *stream = fopen(BFILE_NAME, expected == 0 ? "w" : "a");
+            if (stream == NULL) {
+                fprintf(stderr, "error: could not open %s: %s\n",
+                        BFILE_NAME, strerror(errno));
+                exit(EXIT_FAILURE);
+            }
+            return stream;
+        }
+        if (errno != ENOENT) {
+            fprintf(stderr, "error: could not read %s: %s\n",
+                    BFILE_NAME, strerror(errno));
+            exit(EXIT_FAILURE);
+        }
+    }
+
     FILE *stream = fopen(BFILE_NAME, "w");
     if (stream == NULL) {
         fprintf(stderr, "error: could not create %s: %s\n",
@@ -1007,7 +1155,7 @@ int main(int argc, char **argv)
 
     const unsigned initial_n = target_only ? n : 0U;
     Shared *shared = shared_create(initial_n, thread_count);
-    FILE *bfile = open_bfile();
+    FILE *bfile = open_bfile(target_only, n);
     const unsigned first = target_only ? n : 0U;
     for (unsigned k = first; k <= n; ++k) {
         shared_prepare_n(shared, k);
@@ -1034,7 +1182,7 @@ int main(int argc, char **argv)
     if (stats)
         fprintf(stderr,
                 "memoized states: %" PRIu64 ", nonzero: %" PRIu64
-                ", waits: %" PRIu64 ", sparse: %zu/%zu\n",
+                ", waits: %" PRIu64 ", sparse: %zu/%zu, wide: %u\n",
                 atomic_load_explicit(&shared->computed_states,
                                      memory_order_relaxed),
                 atomic_load_explicit(&shared->nonzero_states,
@@ -1043,7 +1191,9 @@ int main(int argc, char **argv)
                                      memory_order_relaxed),
                 atomic_load_explicit(&shared->memo.size,
                                      memory_order_relaxed),
-                shared->memo.capacity);
+                shared->memo.capacity,
+                atomic_load_explicit(&shared->memo.wide_size,
+                                     memory_order_relaxed));
     close_bfile(bfile);
     shared_destroy(shared);
     return EXIT_SUCCESS;
