@@ -18,20 +18,19 @@
  * open-addressed atomic table allocated from a conservative n-dependent
  * bound.  During --upto, tables grow only between consecutive n and all
  * completed entries are rehashed, so no concurrent resize is possible and
- * smaller terms do not pay for the n=31 table.  Hash collisions are resolved
+ * smaller terms do not pay for the n=29 table.  Hash collisions are resolved
  * by the complete mask key.  Counts, table load, allocation sizes, and output
- * are checked.  Sparse tags reserve their top bit as the atomic busy flag and
- * use the lower 31 bits as the complete mask key.  The deliberate cap is n=31.
+ * are checked.  The deliberate cap is n=29.
  *
  * Build:
  *   clang -O3 -march=native -std=c11 -Wall -Wextra -Wpedantic \
- *       281994_01.c -o 281994_01 -pthread
+ *       281994_02.c -o 281994_02 -pthread
  *
  * Examples:
- *   ./281994_01 --target 31 --threads 8 --self-test --stats
- *   ./281994_01 --upto 24 --self-test
+ *   ./281994_02 --target 29 --threads 8 --self-test --stats
+ *   ./281994_02 --upto 24 --self-test
  *
- * Every result line is also written immediately to b281994_01.txt in the
+ * Every result line is also written immediately to b281994_02.txt in the
  * current directory.  fflush plus fsync after each term preserves the
  * completed prefix if a long --upto run is interrupted.
  * For n >= 24, root-job progress is reported to stderr every 60 seconds.
@@ -50,7 +49,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#define MAX_N 31U
+#define MAX_N 29U
 #define DEFAULT_N 24U
 #define KNOWN_N 29U
 #define DENSE_MEMO_MAX_N 24U
@@ -60,17 +59,12 @@
 #define PROGRESS_MIN_N 24U
 #define PROGRESS_INTERVAL_SECONDS 60.0
 #define PROGRESS_POLL_NANOSECONDS 100000000L
-#define BFILE_NAME "b281994_01.txt"
-#define SPARSE_BUSY_BIT UINT32_C(0x80000000)
+#define BFILE_NAME "b281994_02.txt"
 #define LOW_BITS 16U
 #define LOW_SIZE (UINT32_C(1) << LOW_BITS)
 #define HIGH_BITS (MAX_N - LOW_BITS)
 #define HIGH_SIZE (UINT32_C(1) << HIGH_BITS)
 #define MAX_SUM (MAX_N * (MAX_N + 1U) / 2U)
-
-_Static_assert(MAX_N <= 31U, "uint32_t element masks support at most n=31");
-_Static_assert(MAX_SUM <= UINT16_MAX,
-               "subset-sum lookup entries must fit in uint16_t");
 
 typedef struct {
     _Atomic uint64_t *dense;
@@ -241,10 +235,8 @@ static bool memo_claim(Shared *shared, uint32_t mask, uint64_t *value,
 
     if (memo->capacity == 0)
         die("internal sparse memo capacity is zero");
-    if ((mask & SPARSE_BUSY_BIT) != 0)
-        die("sparse memo mask exceeds 31-bit tag encoding");
-    const uint32_t complete_tag = mask;
-    const uint32_t busy_tag = complete_tag | SPARSE_BUSY_BIT;
+    const uint32_t complete_tag = (mask + 1U) << 1U;
+    const uint32_t busy_tag = complete_tag | 1U;
     size_t index = (size_t)hash_mask(mask) & (memo->capacity - 1U);
     for (size_t probes = 0; probes < memo->capacity; ++probes) {
         uint32_t tag = atomic_load_explicit(&memo->tags[index],
@@ -302,7 +294,7 @@ static void memo_publish(Shared *shared, uint32_t mask,
                               memory_order_release);
     } else {
         shared->memo.values[token->index] = value;
-        const uint32_t complete_tag = mask;
+        const uint32_t complete_tag = (mask + 1U) << 1U;
         atomic_store_explicit(&shared->memo.tags[token->index], complete_tag,
                               memory_order_release);
     }
@@ -532,9 +524,9 @@ static void grow_sparse_memo(Shared *shared, size_t new_capacity,
         const uint32_t tag =
             atomic_load_explicit(&memo->tags[i], memory_order_relaxed);
         if (tag == 0) continue;
-        if ((tag & SPARSE_BUSY_BIT) != 0)
+        if ((tag & 1U) != 0)
             die("busy sparse memo entry found between terms");
-        const uint32_t mask = tag;
+        const uint32_t mask = (tag >> 1U) - 1U;
         if (saved == old_size)
             die("sparse memo contains more entries than its size");
         saved_masks[saved] = mask;
@@ -557,7 +549,7 @@ static void grow_sparse_memo(Shared *shared, size_t new_capacity,
 
     for (size_t i = 0; i < saved; ++i) {
         const uint32_t mask = saved_masks[i];
-        const uint32_t tag = mask;
+        const uint32_t tag = (mask + 1U) << 1U;
         size_t index =
             (size_t)hash_mask(mask) & (new_capacity - 1U);
         while (atomic_load_explicit(&new_tags[index],
@@ -922,8 +914,6 @@ static void usage(FILE *stream, const char *program)
             "[--self-test] [--stats]\n"
             "  --upto N     print a(0)..a(N), 0 <= N <= %u (default %u)\n"
             "  --target N   print only a(N)\n"
-            "               n=31 uses about 6.1 GiB after allocation;\n"
-            "               --upto 31 can temporarily require about 8 GiB\n"
             "  --threads T  use 1..64 workers (default: up to 8 CPUs)\n"
             "  --self-test  compare computed terms with regression values\n"
             "  --stats      report states, waits, and sparse-table load\n"
